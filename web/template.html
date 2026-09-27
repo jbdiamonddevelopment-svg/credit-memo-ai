@@ -1,0 +1,563 @@
+<title>Underwriting Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+:root{
+  --bg:#EEF1F4; --surface:#FFFFFF; --sunk:#F5F7F9; --ink:#15202B; --ink-2:#4A5866; --ink-3:#7A8896;
+  --line:#D9DFE5; --line-2:#E8ECF0; --accent:#0D5C78; --accent-ink:#FFFFFF; --accent-soft:#E1EEF3;
+  --good:#2F7A4E; --good-soft:#E3F1E8; --warn:#A8690F; --warn-soft:#FBF0DD; --bad:#B0382E; --bad-soft:#F8E4E1;
+  --paper:#FDFDFB; --shadow:0 1px 2px rgba(21,32,43,.06),0 2px 8px rgba(21,32,43,.04);
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --serif:"IBM Plex Serif",Georgia,"Times New Roman",serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  color-scheme:dark;
+  --bg:#0D1318; --surface:#151E26; --sunk:#111920; --ink:#E3E9EE; --ink-2:#A9B6C2; --ink-3:#7D8B98;
+  --line:#26323D; --line-2:#1D2831; --accent:#5DB1CE; --accent-ink:#08141A; --accent-soft:#16323D;
+  --good:#6CC08F; --good-soft:#15291E; --warn:#E0A94C; --warn-soft:#2E2413; --bad:#EB7F74; --bad-soft:#321A18;
+  --paper:#18222B; --shadow:none;
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0D1318; --surface:#151E26; --sunk:#111920; --ink:#E3E9EE; --ink-2:#A9B6C2; --ink-3:#7D8B98;
+  --line:#26323D; --line-2:#1D2831; --accent:#5DB1CE; --accent-ink:#08141A; --accent-soft:#16323D;
+  --good:#6CC08F; --good-soft:#15291E; --warn:#E0A94C; --warn-soft:#2E2413; --bad:#EB7F74; --bad-soft:#321A18;
+  --paper:#18222B; --shadow:none;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:14px/1.5 var(--sans);margin:0}
+.wrap{max-width:1320px;margin:0 auto;padding-inline:16px;padding-block:20px 48px}
+h1,h2,h3,h4{text-wrap:balance;margin:0}
+button,select,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+
+/* top bar */
+.top{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 24px;padding-bottom:16px;border-bottom:1px solid var(--line);margin-bottom:20px}
+.brand{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.brand h1{font:600 20px/1.2 var(--serif);letter-spacing:-.01em}
+.brand p{margin:0;color:var(--ink-2);font-size:13px}
+.byline{font-size:12px;color:var(--ink-3)}
+
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:900px){.layout{grid-template-columns:minmax(0,1fr)}}
+
+/* borrower list */
+.rail{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+.rail .eyebrow{margin:0 0 8px 4px}
+.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.list button{width:100%;display:grid;grid-template-columns:28px minmax(0,1fr);align-items:center;gap:10px;text-align:left;
+  background:transparent;border:1px solid transparent;border-radius:6px;padding:8px 10px;cursor:pointer}
+.list button:hover{background:var(--surface)}
+.list button[aria-current="true"]{background:var(--surface);border-color:var(--line);box-shadow:var(--shadow)}
+.list .tk{font:500 12px var(--mono);color:var(--ink-2)}
+.list .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+.picker{display:none}
+@media (max-width:900px){.rail{position:static}.list{display:none}.picker{display:block;width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}}
+
+.grade{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:5px;font:600 12px var(--mono)}
+.g-pass{background:var(--good-soft);color:var(--good)}
+.g-mid{background:var(--accent-soft);color:var(--accent)}
+.g-watch{background:var(--warn-soft);color:var(--warn)}
+.g-crit{background:var(--bad-soft);color:var(--bad)}
+
+/* main */
+main{display:flex;flex-direction:column;gap:20px;min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:20px;box-shadow:var(--shadow);min-width:0}
+.panel>header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px 16px;margin-bottom:14px}
+.panel h2{font:600 15px/1.3 var(--sans)}
+.panel .note{font-size:12px;color:var(--ink-3)}
+
+.hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px 24px;align-items:start}
+@media (max-width:640px){.hero{grid-template-columns:minmax(0,1fr)}}
+.hero h2{font:600 26px/1.15 var(--serif);letter-spacing:-.015em}
+.meta{margin-top:6px;color:var(--ink-2);font-size:13px;display:flex;flex-wrap:wrap;gap:4px 14px}
+.verdict{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+@media (max-width:640px){.verdict{align-items:flex-start}}
+.rating{display:flex;align-items:center;gap:12px}
+.rating .big{width:52px;height:52px;border-radius:8px;display:grid;place-items:center;font:600 24px var(--mono)}
+.rating .lbl{font-weight:600;font-size:15px}
+.rating .eq{font-size:12px;color:var(--ink-3)}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 12px;font-size:12px;font-weight:600;border:1px solid currentColor}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.p-good{color:var(--good);background:var(--good-soft)}
+.p-warn{color:var(--warn);background:var(--warn-soft)}
+.p-bad{color:var(--bad);background:var(--bad-soft)}
+
+/* rating ladder */
+.ladder{margin-top:18px}
+.rungs{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:3px}
+.rung{height:30px;border-radius:4px;background:var(--sunk);border:1px solid var(--line-2);display:grid;place-items:center;font:500 12px var(--mono);color:var(--ink-3)}
+.rung.on{color:var(--accent-ink);border-color:transparent}
+.bands{display:grid;grid-template-columns:5fr 1fr 1fr 1fr;gap:3px;margin-top:6px;font-size:11px;color:var(--ink-3)}
+.bands span{border-top:2px solid var(--line);padding-top:4px}
+.bands .b-pass{border-color:var(--good)}.bands .b-watch{border-color:var(--warn)}.bands .b-sm,.bands .b-sub{border-color:var(--bad)}
+
+/* kpis */
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+@media (max-width:1000px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:560px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{background:var(--surface);padding:14px 16px}
+.kpi .v{font:500 20px/1.2 var(--mono);font-variant-numeric:tabular-nums;margin-top:4px}
+.kpi .s{font-size:12px;color:var(--ink-3);margin-top:2px}
+
+.two{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:20px}
+@media (max-width:1100px){.two{grid-template-columns:minmax(0,1fr)}}
+
+/* tables */
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--line-2);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+thead th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:600;border-bottom:1px solid var(--line)}
+td.num,th.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+tr.sub td{color:var(--ink-3);font-size:12px}
+tr.key td{font-weight:600}
+tr.sep td{border-top:1px solid var(--line);padding-top:10px}
+td.neg{color:var(--bad)}
+.latest{background:var(--sunk)}
+
+/* chart */
+svg text{fill:var(--ink-3);font:11px var(--mono)}
+.chart-wrap{width:100%}
+
+/* scorecard */
+.bar{height:8px;border-radius:4px;background:var(--sunk);border:1px solid var(--line-2);position:relative;min-width:80px}
+.bar i{position:absolute;inset:0 auto 0 0;border-radius:4px}
+
+/* covenants */
+.cov{display:flex;flex-direction:column;gap:14px;margin-top:6px}
+.cov .row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;font-size:13px}
+.cov .track{grid-column:1/-1;height:10px;border-radius:5px;background:var(--sunk);border:1px solid var(--line-2);position:relative}
+.cov .track i{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink)}
+.cov .track b{position:absolute;inset:0 auto 0 0;border-radius:5px}
+.cov .hint{grid-column:1/-1;font-size:12px;color:var(--ink-3)}
+
+/* memo */
+.memo-actions{display:flex;flex-wrap:wrap;gap:8px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:7px 12px;cursor:pointer;font-size:13px;font-weight:500}
+.btn:hover{border-color:var(--ink-3)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn:disabled{opacity:.55;cursor:default}
+.doc{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:28px clamp(16px,4vw,44px);font:15px/1.65 var(--serif);max-width:none}
+.doc .dochead{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 16px;font:12px/1.6 var(--mono);color:var(--ink-2);border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:18px}
+.doc .dochead b{color:var(--ink-3);font-weight:500;text-transform:uppercase;letter-spacing:.06em}
+.doc h3{font:600 12px/1.4 var(--sans);letter-spacing:.07em;text-transform:uppercase;color:var(--accent);margin:22px 0 6px}
+.doc h3:first-of-type{margin-top:0}
+.doc p{margin:0;max-width:72ch}
+.doc ul{margin:0;padding-left:20px;max-width:72ch}
+.doc li{margin:3px 0}
+.doc .ai-tag{display:inline-block;font:600 11px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:1px 6px;margin-bottom:12px}
+.status{font-size:12px;color:var(--ink-3);min-height:18px}
+
+/* ask */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.chip{border:1px solid var(--line);background:var(--sunk);border-radius:999px;padding:5px 12px;font-size:12px;cursor:pointer}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.askrow{display:flex;gap:8px}
+.askrow input{flex:1;min-width:0;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:9px 12px}
+.answer{margin-top:14px;white-space:pre-wrap;font:14px/1.6 var(--serif);background:var(--sunk);border:1px solid var(--line-2);border-radius:6px;padding:14px 16px;max-height:420px;overflow:auto}
+.answer:empty{display:none}
+
+footer.method{font-size:12.5px;color:var(--ink-2);line-height:1.6}
+footer.method h2{font:600 13px var(--sans);margin-bottom:8px;color:var(--ink)}
+footer.method ul{margin:0;padding-left:18px;display:grid;gap:4px;max-width:90ch}
+@media (prefers-reduced-motion:no-preference){.rung,.bar i,.cov b{transition:all .25s ease}}
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <div class="brand">
+      <h1>Underwriting Desk</h1>
+      <p>Credit memos generated from SEC 10-K filings</p>
+    </div>
+    <div class="byline">Built by Jhose Bernhardt · Python credit engine + Claude</div>
+  </div>
+
+  <div class="layout">
+    <aside class="rail" aria-label="Borrowers">
+      <div class="eyebrow">Borrowers · sorted by risk grade</div>
+      <label for="picker" class="eyebrow" hidden>Borrower</label>
+      <select id="picker" class="picker" aria-label="Choose a borrower"></select>
+      <ul class="list" id="list"></ul>
+    </aside>
+
+    <main id="main">
+      <section class="panel">
+        <div class="hero">
+          <div>
+            <div class="eyebrow" id="h-eyebrow"></div>
+            <h2 id="h-name"></h2>
+            <div class="meta" id="h-meta"></div>
+          </div>
+          <div class="verdict">
+            <div class="rating"><div class="big" id="r-big"></div><div><div class="lbl" id="r-lbl"></div><div class="eq" id="r-eq"></div></div></div>
+            <span class="pill" id="decision"></span>
+          </div>
+        </div>
+        <div class="ladder" aria-label="Risk rating scale">
+          <div class="rungs" id="rungs"></div>
+          <div class="bands"><span class="b-pass">Pass (1–5)</span><span class="b-watch">Watch</span><span class="b-sm">Special Mention</span><span class="b-sub">Substandard</span></div>
+        </div>
+      </section>
+
+      <div class="kpis" id="kpis"></div>
+
+      <div class="two">
+        <section class="panel">
+          <header><h2>Financial spread</h2><span class="note">USD · fiscal years · adjusted EBITDA adds back impairments</span></header>
+          <div class="scroll"><table id="spread"></table></div>
+        </section>
+        <section class="panel">
+          <header><h2>Leverage trend</h2><span class="note">Total debt / adjusted EBITDA</span></header>
+          <div class="chart-wrap" id="chart"></div>
+          <div class="scroll" style="margin-top:12px"><table id="ratios"></table></div>
+        </section>
+      </div>
+
+      <div class="two">
+        <section class="panel">
+          <header><h2>Risk rating scorecard</h2><span class="note" id="sc-note"></span></header>
+          <div class="scroll"><table id="scorecard"></table></div>
+          <div class="status" id="overlays" style="margin-top:8px"></div>
+        </section>
+        <section class="panel">
+          <header><h2>Stress test &amp; covenants</h2><span class="note" id="fac-note"></span></header>
+          <div class="scroll"><table id="stress"></table></div>
+          <div class="cov" id="cov"></div>
+        </section>
+      </div>
+
+      <section class="panel" id="memo-panel">
+        <header>
+          <h2>Credit memo</h2>
+          <div class="memo-actions">
+            <button class="btn" id="btn-rule" hidden>Show rule-based draft</button>
+            <button class="btn primary" id="btn-rewrite" hidden>Rewrite in analyst voice</button>
+            <button class="btn" id="btn-docx" hidden>Download memo .md</button>
+            <button class="btn" id="btn-csv" hidden>Download spread .csv</button>
+          </div>
+        </header>
+        <div class="status" id="memo-status"></div>
+        <article class="doc" id="memo"></article>
+      </section>
+
+      <section class="panel" id="ask-panel" hidden>
+        <header><h2>Ask Claude about this credit</h2><span class="note">Uses your Claude account · answers use only the figures on this page</span></header>
+        <div class="chips" id="chips"></div>
+        <form class="askrow" id="ask-form">
+          <input id="ask-input" type="text" placeholder="e.g. What would credit committee push back on?" aria-label="Question about this credit" autocomplete="off">
+          <button class="btn primary" id="ask-btn" type="submit">Ask</button>
+          <button class="btn" id="stop-btn" type="button" hidden>Stop</button>
+        </form>
+        <div class="status" id="ask-status"></div>
+        <div class="answer" id="answer"></div>
+      </section>
+
+      <footer class="panel method">
+        <h2>How this works</h2>
+        <ul>
+          <li>Annual figures come from each company's 10-K XBRL data on SEC EDGAR. A Python engine maps US-GAAP tags to a bank-style spread (revenue, EBITDA, debt, cash flow).</li>
+          <li>EBITDA is operating income plus D&amp;A, with non-cash goodwill and intangible impairments added back. Total debt is funded debt only (operating leases excluded).</li>
+          <li>The scorecard weights leverage (25%), interest coverage (20%), FCF/debt (15%), EBITDA margin (15%), liquidity (10%), scale (10%) and EBITDA trend (5%). Negative equity triggers a one-notch downgrade.</li>
+          <li>The facility request, covenants and decision are illustrative, sized at about 0.25x EBITDA, and stress-tested at EBITDA −20% / +200bp and −35% / +300bp.</li>
+          <li>Portfolio project for learning purposes. Not investment advice or an actual lending decision, and not an agency rating.</li>
+        </ul>
+      </footer>
+    </main>
+  </div>
+</div>
+
+<script>
+const DATA = /*__DATA__*/[];
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function money(x, d = 1) {
+  if (x == null) return "n/a";
+  const a = Math.abs(x);
+  const s = a >= 1e9 ? "$" + (a / 1e9).toFixed(d) + "B" : a >= 1e6 ? "$" + (a / 1e6).toFixed(d) + "M" : "$" + a.toFixed(0);
+  return x < 0 ? "(" + s + ")" : s;
+}
+const pct = (x, d = 1) => x == null ? "n/a" : (x * 100).toFixed(d) + "%";
+const mult = (x, d = 1) => x == null ? "n/a" : x.toFixed(d) + "x";
+const gradeClass = g => g <= 2 ? "g-pass" : g <= 5 ? "g-mid" : g === 6 ? "g-watch" : "g-crit";
+const gradeColor = g => g <= 2 ? "var(--good)" : g <= 5 ? "var(--accent)" : g === 6 ? "var(--warn)" : "var(--bad)";
+const decisionClass = d => d.startsWith("Approve with") ? "p-warn" : d.startsWith("Approve") ? "p-good" : "p-bad";
+const fyLabel = p => "FY" + p.fiscal_year;
+const niceName = n => n.replace(/\b(INC|CORP|CO|LTD)\b\.?/g, m => m).replace(/^([A-Z0-9 ,.&'-]+)$/, s => s.toLowerCase().replace(/(^|\s|-)([a-z])/g, (m, a, b) => a + b.toUpperCase()));
+
+let cur = 0;
+let aiMemo = {}; // ticker -> rewritten text
+let showingAI = false;
+
+function buildList() {
+  $("list").innerHTML = DATA.map((c, i) => {
+    const g = c.scorecard.risk_rating;
+    return `<li><button type="button" data-i="${i}" aria-current="${i === cur}">
+      <span class="grade ${gradeClass(g)}" title="Risk grade ${g}">${g}</span>
+      <span><span class="nm">${esc(niceName(c.company.name))}</span><br><span class="tk">${esc(c.company.ticker || "")}</span></span>
+      </button></li>`;
+  }).join("");
+  $("list").querySelectorAll("button").forEach(b => b.onclick = () => select(+b.dataset.i));
+  $("picker").innerHTML = DATA.map((c, i) => `<option value="${i}">${esc(c.company.ticker)} · ${esc(niceName(c.company.name))} (grade ${c.scorecard.risk_rating})</option>`).join("");
+  $("picker").onchange = e => select(+e.target.value);
+}
+
+function select(i) {
+  cur = i; showingAI = false;
+  $("list").querySelectorAll("button").forEach(b => b.setAttribute("aria-current", +b.dataset.i === i));
+  $("picker").value = i;
+  $("answer").textContent = ""; $("ask-status").textContent = "";
+  render();
+}
+
+function render() {
+  const c = DATA[cur], p = c.periods[c.periods.length - 1], r = c.ratios[c.ratios.length - 1], sc = c.scorecard, f = c.facility;
+  $("h-eyebrow").textContent = (c.company.industry || "") + (c.company.sic ? " · SIC " + c.company.sic : "");
+  $("h-name").textContent = niceName(c.company.name);
+  $("h-meta").innerHTML = `<span class="num">${esc(c.company.ticker)}</span><span>CIK <span class="num">${c.company.cik}</span></span><span>Latest: ${fyLabel(p)} (ended ${esc(p.period_end)})</span>`;
+  const g = sc.risk_rating;
+  $("r-big").className = "big " + gradeClass(g); $("r-big").textContent = g;
+  $("r-lbl").textContent = "Risk grade " + g + " · " + sc.risk_label;
+  $("r-eq").textContent = "≈ " + sc.implied_equivalent + " · score " + sc.weighted_score.toFixed(2) + "/10";
+  $("decision").className = "pill " + decisionClass(f.decision); $("decision").textContent = f.decision;
+  $("rungs").innerHTML = [1,2,3,4,5,6,7,8].map(n => `<div class="rung ${n === g ? "on" : ""}" style="${n === g ? "background:" + gradeColor(n) : ""}">${n}</div>`).join("");
+
+  const kp = [
+    ["Revenue", money(p.revenue), r.revenue_growth == null ? "" : (r.revenue_growth >= 0 ? "+" : "") + pct(r.revenue_growth) + " YoY"],
+    ["Adj. EBITDA", money(p.ebitda), pct(r.ebitda_margin) + " margin"],
+    ["Debt / EBITDA", mult(r.debt_to_ebitda), "net " + mult(r.net_debt_to_ebitda)],
+    ["Interest coverage", mult(r.interest_coverage), r.interest_coverage == null ? "interest not disclosed" : "EBITDA / interest"],
+    ["Free cash flow", money(p.fcf), p.fcf == null ? "capex not tagged" : "FCF / debt " + pct(r.fcf_to_debt)],
+  ];
+  $("kpis").innerHTML = kp.map(k => `<div class="kpi"><div class="eyebrow">${k[0]}</div><div class="v">${esc(k[1])}</div><div class="s">${esc(k[2])}</div></div>`).join("");
+
+  renderSpread(c); renderChart(c); renderRatios(c); renderScorecard(c); renderStress(c); renderMemo();
+}
+
+function row(label, vals, cls = "", fmt = money) {
+  return `<tr class="${cls}"><td>${label}</td>${vals.map((v, i, a) => `<td class="num ${v != null && v < 0 ? "neg" : ""} ${i === a.length - 1 ? "latest" : ""}">${esc(fmt(v))}</td>`).join("")}</tr>`;
+}
+function renderSpread(c) {
+  const P = c.periods, col = k => P.map(p => p[k]);
+  const hasImp = P.some(p => p.impairments > 0);
+  $("spread").innerHTML = `<thead><tr><th>$</th>${P.map((p, i) => `<th class="num ${i === P.length - 1 ? "latest" : ""}">${fyLabel(p)}</th>`).join("")}</tr></thead><tbody>
+    ${row("Revenue", col("revenue"), "key")}
+    ${row("Gross profit", col("gross_profit"))}
+    ${hasImp ? row("Reported EBITDA", col("ebitda_reported"), "sub") + row("+ Impairments", col("impairments"), "sub") : ""}
+    ${row("Adjusted EBITDA", col("ebitda"), "key")}
+    ${row("Interest expense", col("interest_expense"))}
+    ${row("Net income", col("net_income"))}
+    ${row("Operating cash flow", col("cfo"), "sep")}
+    ${row("Capex", col("capex"))}
+    ${row("Free cash flow", col("fcf"), "key")}
+    ${row("Cash", col("cash"), "sep")}
+    ${row("Total debt", col("total_debt"), "key")}
+    ${row("Net debt", col("net_debt"))}
+    ${row("Shareholders' equity", col("equity"))}
+  </tbody>`;
+}
+function renderRatios(c) {
+  const R = c.ratios;
+  $("ratios").innerHTML = `<thead><tr><th>Ratio</th>${R.map((r, i) => `<th class="num ${i === R.length - 1 ? "latest" : ""}">FY${r.fiscal_year}</th>`).join("")}</tr></thead><tbody>
+    ${row("EBITDA margin", R.map(r => r.ebitda_margin), "", pct)}
+    ${row("Debt / EBITDA", R.map(r => r.debt_to_ebitda), "", mult)}
+    ${row("EBITDA / interest", R.map(r => r.interest_coverage), "", mult)}
+    ${row("FCF / debt", R.map(r => r.fcf_to_debt), "", pct)}
+    ${row("Current ratio", R.map(r => r.current_ratio), "", x => mult(x, 2))}
+  </tbody>`;
+}
+
+function renderChart(c) {
+  const R = c.ratios, W = 420, H = 210, L = 34, Rt = 30, T = 18, B = 28;
+  const vals = R.map(r => r.debt_to_ebitda);
+  const finite = vals.filter(v => v != null);
+  const top = Math.max(5, Math.ceil(Math.max(0, ...finite) + 0.5));
+  const step = top <= 6 ? 1 : top <= 12 ? 2 : 5;
+  const x = i => L + (R.length === 1 ? (W - L - Rt) / 2 : i * (W - L - Rt) / (R.length - 1));
+  const y = v => T + (H - T - B) * (1 - Math.min(v, top) / top);
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Debt to EBITDA by fiscal year">`;
+  for (let v = 0; v <= top; v += step) s += `<line x1="${L}" x2="${W - Rt}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line-2)" fill="none"/><text x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${v}x</text>`;
+  s += `<line x1="${L}" x2="${W - Rt}" y1="${y(4)}" y2="${y(4)}" stroke="var(--warn)" stroke-dasharray="4 4" fill="none"/><text x="${W - Rt}" y="${y(4) - 6}" text-anchor="end" style="fill:var(--warn)">4.0x policy guide</text>`;
+  // area + line through consecutive finite points
+  let path = "", area = "", seg = [];
+  const flush = () => { if (seg.length > 1) { path += "M" + seg.map(([i, v]) => x(i) + "," + y(v)).join("L"); area += `M${x(seg[0][0])},${y(0)}L` + seg.map(([i, v]) => x(i) + "," + y(v)).join("L") + `L${x(seg[seg.length - 1][0])},${y(0)}Z`; } seg = []; };
+  vals.forEach((v, i) => v == null ? flush() : seg.push([i, v])); flush();
+  s += `<path d="${area}" fill="var(--accent)" fill-opacity=".10" stroke="none"/><path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2"/>`;
+  vals.forEach((v, i) => {
+    const last = i === vals.length - 1;
+    if (v != null) s += `<circle cx="${x(i)}" cy="${y(v)}" r="${last ? 5 : 3.5}" fill="${last ? "var(--accent)" : "var(--surface)"}" stroke="var(--accent)" stroke-width="2"/><text x="${x(i)}" y="${y(v) - 10}" text-anchor="middle" style="fill:var(--ink)">${v > top ? ">" + top : v.toFixed(1)}x</text>`;
+    else s += `<text x="${x(i)}" y="${y(0) - 8}" text-anchor="middle">n/m</text>`;
+    s += `<text x="${x(i)}" y="${H - 8}" text-anchor="middle">FY${R[i].fiscal_year}</text>`;
+  });
+  $("chart").innerHTML = s + "</svg>";
+}
+
+function renderScorecard(c) {
+  const sc = c.scorecard;
+  $("sc-note").textContent = "Weighted score " + sc.weighted_score.toFixed(2) + " / 10";
+  $("scorecard").innerHTML = `<thead><tr><th>Factor</th><th class="num">Weight</th><th class="num">Value</th><th>Score</th></tr></thead><tbody>` +
+    sc.factors.map(f => {
+      const v = f.format === "$" ? money(f.value) : f.format === "%" ? pct(f.value) : mult(f.value);
+      const s = f.score;
+      const col = s == null ? "var(--line)" : s >= 8 ? "var(--good)" : s >= 4 ? "var(--accent)" : s >= 2 ? "var(--warn)" : "var(--bad)";
+      return `<tr><td>${esc(f.factor)}</td><td class="num">${(f.weight * 100).toFixed(0)}%</td><td class="num">${esc(v)}</td>
+        <td><div style="display:flex;align-items:center;gap:8px"><div class="bar" style="flex:1"><i style="width:${(s ?? 0) * 10}%;background:${col}"></i></div><span class="num" style="width:2.2em;text-align:right">${s ?? "n/a"}</span></div></td></tr>`;
+    }).join("") + "</tbody>";
+  $("overlays").textContent = sc.overlays.length ? "Overlay: " + sc.overlays.join("; ") : "No policy overlays applied.";
+}
+
+function renderStress(c) {
+  const f = c.facility;
+  $("fac-note").textContent = "Pro forma for " + money(f.amount, 2) + " illustrative term loan";
+  $("stress").innerHTML = `<thead><tr><th>Scenario</th><th class="num">EBITDA</th><th class="num">Rates</th><th class="num">Leverage</th><th class="num">Coverage</th></tr></thead><tbody>` +
+    f.pro_forma.map(s => `<tr><td>${esc(s.scenario)}</td><td class="num">${s.ebitda_change ? pct(s.ebitda_change, 0) : "—"}</td><td class="num">${s.rate_change ? "+" + Math.round(s.rate_change * 1e4) + "bp" : "—"}</td>
+      <td class="num">${mult(s.leverage)}</td><td class="num ${s.coverage != null && s.coverage < 2 ? "neg" : ""}">${mult(s.coverage)}</td></tr>`).join("") + "</tbody>";
+  const base = f.pro_forma[0], down = f.pro_forma[1];
+  $("cov").innerHTML = f.covenants.map(cv => {
+    const isLev = cv.name.includes("Leverage");
+    const b = isLev ? base.leverage : base.coverage, d = isLev ? down.leverage : down.coverage;
+    const max = isLev ? Math.max(cv.level * 1.25, (d ?? 0) * 1.1) : Math.max(b ?? 0, cv.level * 2) * 1.05;
+    const breach = d != null && (isLev ? d > cv.level : d < cv.level);
+    const head = b == null ? null : isLev ? 1 - b / cv.level : b / cv.level - 1;
+    return `<div class="row"><span>${esc(cv.name)}</span><span class="num">${isLev ? "≤" : "≥"} ${cv.level.toFixed(2)}x</span>
+      <div class="track" title="Bar = base case; line = covenant"><b style="width:${Math.min(100, (b ?? 0) / max * 100)}%;background:${breach ? "var(--warn)" : "var(--accent)"}"></b><i style="left:${Math.min(100, cv.level / max * 100)}%"></i></div>
+      <span class="hint">Base ${mult(b)} · downside ${mult(d)} · ${head == null ? "" : pct(head, 0) + " headroom"}${breach ? " · downside case would breach" : ""}</span></div>`;
+  }).join("");
+}
+
+const ORDER = [["request","Request"],["borrower_overview","Borrower overview"],["financial_performance","Financial performance"],["leverage_and_coverage","Leverage & debt service coverage"],["liquidity","Liquidity & capital structure"],["stress_test","Stress test (pro forma)"],["strengths","Key strengths"],["risks","Key risks"],["mitigants","Mitigants"],["risk_rating","Risk rating"],["covenants","Proposed financial covenants"],["recommendation","Recommendation"]];
+function memoHead(c) {
+  const p = c.periods[c.periods.length - 1];
+  return `<div class="dochead"><b>Borrower</b><span>${esc(niceName(c.company.name))} (${esc(c.company.ticker)})</span><b>Period</b><span>${fyLabel(p)} · 10-K via SEC EDGAR</span><b>Grade</b><span>${c.scorecard.risk_rating} · ${esc(c.scorecard.risk_label)}</span><b>Decision</b><span>${esc(c.facility.decision)}</span></div>`;
+}
+function renderMemo() {
+  const c = DATA[cur], m = c.memo.sections, t = c.company.ticker;
+  $("btn-rule").hidden = !(showingAI && aiMemo[t]);
+  if (showingAI && aiMemo[t]) { renderAIMemo(aiMemo[t]); return; }
+  $("memo-status").textContent = "Rule-based draft generated by the Python engine. Every number traces to the spread above.";
+  $("memo").innerHTML = memoHead(c) + ORDER.map(([k, title]) => {
+    const v = m[k];
+    return `<h3>${esc(title)}</h3>` + (Array.isArray(v) ? `<ul>${v.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : `<p>${esc(v)}</p>`);
+  }).join("");
+  if (aiMemo[t]) $("btn-rewrite").textContent = "Show analyst-voice version";
+  else $("btn-rewrite").textContent = "Rewrite in analyst voice";
+}
+function renderAIMemo(text) {
+  const c = DATA[cur];
+  const html = text.split("\n").map(line => {
+    const l = line.trim();
+    if (!l) return "";
+    if (l.startsWith("## ")) return `<h3>${esc(l.slice(3))}</h3>`;
+    if (/^[-•*] /.test(l)) return `<ul><li>${esc(l.slice(2))}</li></ul>`;
+    return `<p>${esc(l)}</p>`;
+  }).join("").replace(/<\/ul><ul>/g, "");
+  $("memo").innerHTML = `<span class="ai-tag">Claude rewrite · numbers from the engine</span>` + memoHead(c) + html;
+}
+
+// ---------- context for Claude ----------
+function context(c) {
+  const P = c.periods, R = c.ratios;
+  const lines = [`Borrower: ${c.company.name} (${c.company.ticker}), ${c.company.industry}.`];
+  P.forEach((p, i) => {
+    const r = R[i];
+    lines.push(`${fyLabel(p)}: revenue ${money(p.revenue)}, adj EBITDA ${money(p.ebitda)} (reported ${money(p.ebitda_reported)}, impairments ${money(p.impairments)}), interest ${money(p.interest_expense)}, net income ${money(p.net_income)}, CFO ${money(p.cfo)}, capex ${money(p.capex)}, FCF ${money(p.fcf)}, cash ${money(p.cash)}, total debt ${money(p.total_debt)}, equity ${money(p.equity)}; debt/EBITDA ${mult(r.debt_to_ebitda)}, coverage ${mult(r.interest_coverage)}, EBITDA margin ${pct(r.ebitda_margin)}, current ratio ${mult(r.current_ratio, 2)}.`);
+  });
+  lines.push(`Scorecard: grade ${c.scorecard.risk_rating} (${c.scorecard.risk_label}, ~${c.scorecard.implied_equivalent}), weighted ${c.scorecard.weighted_score}/10. Factors: ` + c.scorecard.factors.map(f => `${f.factor}=${f.score ?? "n/a"}`).join(", ") + ". Overlays: " + (c.scorecard.overlays.join("; ") || "none") + ".");
+  lines.push(`Illustrative request: ${money(c.facility.amount, 2)} ${c.facility.type}, ${c.facility.tenor_years}y. Pro forma: ` + c.facility.pro_forma.map(s => `${s.scenario} leverage ${mult(s.leverage)} coverage ${mult(s.coverage)}`).join("; ") + ".");
+  lines.push("Covenants: " + c.facility.covenants.map(cv => `${cv.name} ${cv.level}x`).join("; ") + `. Decision: ${c.facility.decision}.`);
+  lines.push("Rule-based memo sections: " + JSON.stringify(c.memo.sections));
+  return lines.join("\n");
+}
+
+// ---------- capabilities ----------
+function errCopy(code) {
+  return ({ rate_limited: "Too many requests right now. Try again in a minute.", session_expired: "Sign in to Claude again to use this.", refused: "Claude declined that request. Try rephrasing it.", empty_completion: "No answer came back. Try a shorter question.", prompt_too_large: "That was too much text to send.", upstream_error: "The connection dropped. Try again." })[code] || "Something went wrong. Try again.";
+}
+const HIDE = ["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"];
+
+(async function initCaps() {
+  if (!window.claude?.use) return;
+  const [sample, downloads] = await Promise.all([claude.use("sample"), claude.use("downloads")]);
+  if (downloads) {
+    $("btn-docx").hidden = false; $("btn-csv").hidden = false;
+    $("btn-docx").onclick = async () => {
+      const c = DATA[cur], t = c.company.ticker, m = c.memo.sections, p = c.periods[c.periods.length - 1];
+      const md = [`# Credit Memo: ${c.company.name} (${t})`, "", `${fyLabel(p)} · Source: SEC EDGAR 10-K XBRL · Risk grade ${c.scorecard.risk_rating} (${c.scorecard.risk_label}) · ${c.facility.decision}`, ""]
+        .concat(...ORDER.map(([k, title]) => ["## " + title, "", ...(Array.isArray(m[k]) ? m[k].map(x => "- " + x) : [m[k]]), ""]));
+      const body = showingAI && aiMemo[t] ? `# Credit Memo: ${c.company.name} (${t})\n\n_Analyst-voice rewrite by Claude; figures from the engine._\n\n` + aiMemo[t] : md.join("\n");
+      try { await downloads.save({ filename: t + "_credit_memo.md", data: body }); }
+      catch (e) { if (["unavailable", "not_granted", "capability_disabled", "capability_removed"].includes(e?.code)) { $("btn-docx").hidden = true; $("btn-csv").hidden = true; } }
+    };
+    $("btn-csv").onclick = async () => {
+      const c = DATA[cur], P = c.periods;
+      const keys = [["Revenue","revenue"],["Gross profit","gross_profit"],["Reported EBITDA","ebitda_reported"],["Impairments","impairments"],["Adjusted EBITDA","ebitda"],["Interest expense","interest_expense"],["Net income","net_income"],["Operating cash flow","cfo"],["Capex","capex"],["Free cash flow","fcf"],["Cash","cash"],["Total debt","total_debt"],["Net debt","net_debt"],["Equity","equity"]];
+      const csv = ["Line item," + P.map(fyLabel).join(","), ...keys.map(([l, k]) => l + "," + P.map(p => p[k] ?? "").join(","))].join("\n");
+      try { await downloads.save({ filename: c.company.ticker + "_spread.csv", data: csv }); } catch (e) {}
+    };
+  }
+  if (!sample) return;
+  $("ask-panel").hidden = false; $("btn-rewrite").hidden = false;
+
+  let ctl = null;
+  const hideAI = () => { $("ask-panel").hidden = true; $("btn-rewrite").hidden = true; };
+
+  $("btn-rule").onclick = () => { showingAI = false; renderMemo(); };
+  $("btn-rewrite").onclick = async () => {
+    const c = DATA[cur], t = c.company.ticker;
+    if (aiMemo[t]) { showingAI = true; renderMemo(); return; }
+    const btn = $("btn-rewrite"); btn.disabled = true;
+    $("memo-status").textContent = "Claude is drafting…";
+    const prompt = `You are a senior commercial credit analyst at a US bank. Rewrite the credit memo below as a polished credit-committee memo.
+Rules: use ONLY the figures provided; do not invent or change any number, rating, covenant or the decision. Keep it under 650 words.
+Format: plain text. Section headings on their own line starting with "## " in this order: Request, Borrower Overview, Financial Performance, Leverage & Coverage, Liquidity, Stress Test, Strengths, Risks & Mitigants, Risk Rating, Covenants, Recommendation. Use "- " for bullet lines. No other markdown.
+
+DATA:
+${context(c)}`;
+    try {
+      const { text } = await sample(prompt, { onText: ({ text }) => { showingAI = true; renderAIMemo(text); $("memo-status").textContent = "Claude is writing…"; } });
+      aiMemo[t] = text; showingAI = true; renderMemo();
+      $("memo-status").textContent = "Analyst-voice rewrite by Claude. Figures come from the engine; check them against the spread.";
+    } catch (e) {
+      if (HIDE.includes(e.code)) { hideAI(); showingAI = false; renderMemo(); }
+      else { $("memo-status").textContent = errCopy(e.code); if (!e.text) { showingAI = false; renderMemo(); } }
+    } finally { btn.disabled = false; $("btn-rule").hidden = !aiMemo[t]; }
+  };
+
+  const PRESETS = ["What would credit committee push back on?", "Is this rating too generous or too harsh?", "Suggest tighter covenants and explain why", "Explain this credit to a client in plain English", "What should I ask management before approving?"];
+  $("chips").innerHTML = PRESETS.map(q => `<button type="button" class="chip">${esc(q)}</button>`).join("");
+  $("chips").querySelectorAll(".chip").forEach(b => b.onclick = () => { $("ask-input").value = b.textContent; ask(); });
+  $("ask-form").onsubmit = e => { e.preventDefault(); ask(); };
+  $("stop-btn").onclick = () => ctl?.abort();
+
+  async function ask() {
+    const q = $("ask-input").value.trim(); if (!q) return;
+    const c = DATA[cur];
+    ctl = new AbortController();
+    $("ask-btn").disabled = true; $("stop-btn").hidden = false;
+    $("ask-status").textContent = "Thinking…"; $("answer").textContent = "";
+    const prompt = `You are an experienced bank credit officer mentoring a junior analyst. Answer the question about this borrower using only the data below; say so if the data can't answer it. Be specific and cite the figures. Keep it under 250 words, plain text, short paragraphs or "- " bullets.
+
+QUESTION: ${q}
+
+DATA:
+${context(c)}`;
+    try {
+      await sample(prompt, { signal: ctl.signal, onText: ({ text }) => { $("answer").textContent = text; $("ask-status").textContent = ""; } });
+      $("ask-status").textContent = "";
+    } catch (e) {
+      if (e.text) $("answer").textContent = e.text;
+      if (HIDE.includes(e.code)) hideAI();
+      else if (e.code !== "cancelled") $("ask-status").textContent = errCopy(e.code);
+      else $("ask-status").textContent = "Stopped.";
+    } finally { $("ask-btn").disabled = false; $("stop-btn").hidden = true; }
+  }
+})();
+
+buildList();
+render();
+</script>
